@@ -1,0 +1,27 @@
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "./backend/.env" });
+
+const connectDb = async () => {
+  try {
+    const mongoURI = process.env.MONGO_URI;
+
+    if (!mongoURI) {
+      throw new Error("MONGO_URI is not defined in .env");
+    }
+
+    await mongoose.connect(mongoURI, {
+      family: 4,
+      serverSelectionTimeoutMS: 5000
+    });
+
+    console.log("✅ MongoDB connected successfully");
+
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error);
+    process.exit(1);
+  }
+};
+
+export default connectDb;
