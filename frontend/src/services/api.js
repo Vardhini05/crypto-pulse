@@ -4,7 +4,7 @@ import axios from "axios";
   Base API instance
 */
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://crypto-pulse-mk58.onrender.com/api",
 });
 
 /*
