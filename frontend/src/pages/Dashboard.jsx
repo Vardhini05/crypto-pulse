@@ -27,12 +27,13 @@ export default function Dashboard() {
     if (!token) navigate("/login");
   }, [navigate]);
 
-  // Fetch cryptos
+  // Load cryptos
   const loadCryptos = async () => {
     setLoading(true);
     try {
       const res = await fetchCryptos();
-      setCryptos(res.data);
+      setCryptos(res.data || []);
+      setError("");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch crypto data");
     } finally {
@@ -44,7 +45,7 @@ export default function Dashboard() {
     loadCryptos();
   }, []);
 
-  // Suggestions (local filter)
+  // Suggestions
   useEffect(() => {
     if (!searchInput.trim()) {
       setSuggestions([]);
@@ -78,14 +79,14 @@ export default function Dashboard() {
 
   // Add crypto
   const handleAddCrypto = async (symbol) => {
-    const cryptoToAdd = symbol || searchInput.trim();
+    const cryptoToAdd = (symbol || searchInput.trim()).toLowerCase();
 
     if (!cryptoToAdd) {
       setError("Please enter a cryptocurrency symbol");
       return;
     }
 
-    if (isAdding) return; // prevent spam clicks
+    if (isAdding) return;
 
     setIsAdding(true);
     setError("");
@@ -105,6 +106,14 @@ export default function Dashboard() {
 
       if (err.response?.status === 429) {
         errorMessage = "Too many requests. Please wait a few seconds.";
+      }
+
+      // If coin already exists → refresh dashboard
+      if (errorMessage.toLowerCase().includes("exists")) {
+        await loadCryptos();
+        closePopup();
+        setIsAdding(false);
+        return;
       }
 
       setError(errorMessage);
@@ -173,7 +182,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {cryptos.map((crypto) => (
             <CryptoCard
-              key={crypto.id}
+              key={crypto.id || crypto.symbol}
               crypto={crypto}
               onDelete={(deletedId) =>
                 setCryptos((prev) =>
@@ -211,7 +220,9 @@ export default function Dashboard() {
                 type="text"
                 placeholder="bitcoin, btc, ripple..."
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                onChange={(e) =>
+                  setSearchInput(e.target.value.toLowerCase())
+                }
                 onKeyDown={handleKeyDown}
                 className="w-full bg-gray-700 text-white rounded px-3 py-2 mb-3"
               />
@@ -222,7 +233,7 @@ export default function Dashboard() {
                     <li
                       key={coin.id}
                       onClick={() => {
-                        setSearchInput(coin.id);
+                        setSearchInput(coin.id.toLowerCase());
                         setSuggestions([]);
                       }}
                       className="cursor-pointer p-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
